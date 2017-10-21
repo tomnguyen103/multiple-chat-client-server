@@ -45,7 +45,7 @@ public class chat {
 
 
 /*
- * A chat server that delivers private messages.
+ * A chat server that delivers private messages between users.
  */
 class MultiThreadChatServerSync {
 
@@ -59,37 +59,37 @@ class MultiThreadChatServerSync {
     // This chat server can accept up to maxClientsCount clients' connections.
     private static final int maxClientsCount = 20;
     private static final clientThread[] threads = new clientThread[maxClientsCount];
-    private static HashMap<String, ArrayList<String>> connMapper = new HashMap<String, ArrayList<String>>();
+    private static HashMap<String, ArrayList<String>> Mapper = new HashMap<String, ArrayList<String>>();
 
     public static boolean checkConnection(String client1, String client2) {
-        if (connMapper.containsKey(client1) && connMapper.get(client1).contains(client2) == true) {
+        if (Mapper.containsKey(client1) && Mapper.get(client1).contains(client2) == true) {
             return true;
         }
         return false;
     }
 
     public static void setConnection(String client1, String client2) {
-        if (connMapper.containsKey(client1) == false) {
-            connMapper.put(client1, new ArrayList<String>());
+        if (Mapper.containsKey(client1) == false) {
+            Mapper.put(client1, new ArrayList<String>());
         }
-        if (connMapper.containsKey(client2) == false) {
-            connMapper.put(client2, new ArrayList<String>());
+        if (Mapper.containsKey(client2) == false) {
+            Mapper.put(client2, new ArrayList<String>());
         }
-        if (connMapper.get(client1).contains(client2) == false) {
-            connMapper.get(client1).add(client2);
+        if (Mapper.get(client1).contains(client2) == false) {
+            Mapper.get(client1).add(client2);
         }
-        if (connMapper.get(client2).contains(client1) == false) {
-            connMapper.get(client2).add(client1);
+        if (Mapper.get(client2).contains(client1) == false) {
+            Mapper.get(client2).add(client1);
         }
 
     }
 
     public static void remConnection(String client1, String client2) {
-        if (connMapper.containsKey(client1) && connMapper.get(client1).contains(client2) == true) {
-            connMapper.get(client1).remove(client2);
+        if (Mapper.containsKey(client1) && Mapper.get(client1).contains(client2) == true) {
+            Mapper.get(client1).remove(client2);
         }
-        if (connMapper.containsKey(client2) && connMapper.get(client2).contains(client1) == true) {
-            connMapper.get(client2).remove(client1);
+        if (Mapper.containsKey(client2) && Mapper.get(client2).contains(client1) == true) {
+            Mapper.get(client2).remove(client1);
         }
     }
 
@@ -117,7 +117,7 @@ class MultiThreadChatServerSync {
     public static void main(String args[]) {
 
         // The default port number.
-        int portNumber = 2222;
+        int portNumber = 5454;
 
         if (args == null || args.length < 1) {
             System.out.println("Now using port number=" + portNumber);
@@ -125,8 +125,7 @@ class MultiThreadChatServerSync {
             portNumber = Integer.valueOf(args[0]).intValue();
         }
 
-        /*
-     * Open a server socket on the portNumber (default 2222). */
+        /* Open a server socket on the portNumber (default 5454). */
         try {
             serverSocket = new ServerSocket(portNumber);
         } catch (IOException e) {
@@ -134,8 +133,7 @@ class MultiThreadChatServerSync {
         }
 
         /*
-     * Create a client socket for each connection and pass it to a new client
-     * thread.
+         * Create a client socket for each connection and pass it to a new client
          */
         new serverThread(portNumber + "").start();
         while (true) {
@@ -228,9 +226,9 @@ class clientThread extends Thread {
             /* Welcome the new the client. */
             clientAddr = clientSocket.getInetAddress().getHostAddress();
             clientPort = clientSocket.getPort();
-            clientFull = clientAddr + ":" + clientPort;
+            clientFull = clientAddr + ":" + clientPort; // get the full address and port
             os.println("Welcome " + clientFull
-                    + " to our chat room.\nTo leave enter /quit in a new line.");
+                    + " to our chat room.\nTo leave enter /exit in a new line.");
             synchronized (this) {
                 for (int i = 0; i < maxClientsCount; i++) {
                     if (threads[i] != null && threads[i] == this) {
@@ -267,7 +265,7 @@ class clientThread extends Thread {
                                 + "* exit : To disconnect from Server ");
                         continue;
                     }
-                    //List all hosts
+                    //List all connection associated with ID
                     if (line.startsWith("list")) {
                         this.os.println("ID" + "  " + "IP Address" + "  " + "Port");
                         for (clientThread ct : threads) {
@@ -277,6 +275,8 @@ class clientThread extends Thread {
                         }
                         continue;
                     }
+                    
+                    // Connect to a desired server as a client
                     if (line.startsWith("connect")) {
                         String[] words = line.split("\\s", 3);
                         synchronized (this) {
@@ -285,9 +285,12 @@ class clientThread extends Thread {
                         }
                         continue;
                     }
-
+                    
+                    // not sure if it works
                     if (line.startsWith("terminate")) {
                         String[] words = line.split("\\s", 3);
+                        
+                        // synchronized the thread
                         synchronized (this) {
                             MultiThreadChatServerSync.remConnection(this.clientFull, words[1] + ":" + words[2]);
                             this.os.println("Terminated!");
@@ -301,6 +304,7 @@ class clientThread extends Thread {
                         if (words.length > 2 && words[2] != null) {
                             words[2] = words[2].trim();
                             if (!words[2].isEmpty()) {
+                            		// synchronized the thread to continue
                                 synchronized (this) {
                                     for (int i = 0; i < maxClientsCount; i++) {
                                         if (threads[i] != null && threads[i] != this
@@ -308,10 +312,8 @@ class clientThread extends Thread {
                                                 && threads[i].clientFull != null
                                                 && threads[i].clientID.equals(words[1])) {
                                             threads[i].os.println("<" + clientFull + "> " + words[2]);
-                                            /*
-                     * Echo this message to let the client know the private
-                     * message was sent.
-                                             */
+                                            /* Show this message to let the client know the private message was sent. */
+                                             
                                             this.os.println("<" + clientFull + "> " + words[2]);
                                             break;
                                         }
@@ -334,12 +336,11 @@ class clientThread extends Thread {
                     }
                 }
             }
-            os.println("*** Bye " + clientFull + " ***");
+            // client exits
+            os.println("*** Bye " + clientFull + " ***"); 
 
-            /*
-       * Clean up. Set the current thread variable to null so that a new client
-       * could be accepted by the server.
-             */
+            
+            /* Clean up. Set the current thread variable to null so that a new clien could be accepted by the server. */
             synchronized (this) {
                 for (int i = 0; i < maxClientsCount; i++) {
                     if (threads[i] == this) {
@@ -347,9 +348,8 @@ class clientThread extends Thread {
                     }
                 }
             }
-            /*
-       * Close the output stream, close the input stream, close the socket.
-             */
+     
+            /* Close the output stream, close the input stream, close the socket. */
             is.close();
             os.close();
             clientSocket.close();
@@ -358,7 +358,7 @@ class clientThread extends Thread {
     }
 }
 
-///////////////////////////////Client Code /////////////////////////////////////////////////////
+///////////////////////////////Client Side /////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 
 class MultiThreadChatClient implements Runnable {
@@ -431,16 +431,13 @@ class MultiThreadChatClient implements Runnable {
      */
     @SuppressWarnings("deprecation")
 	public void run() {
-        /*
-     * Keep on reading from the socket till we receive "Bye" from the
-     * server. Once we received that then we want to break.
-         */
+
         String responseLine = "";
         try {
 
             while ((responseLine = is.readLine()) != null) {
                 System.out.println(responseLine);
-                if (responseLine.indexOf("*** Bye") != -1) {
+                if (responseLine.indexOf("Thank you for using this Chat!") != -1) {
                     break;
                 }
             }
