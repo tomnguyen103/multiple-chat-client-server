@@ -1,3 +1,5 @@
 Tom Nguyen - Networking Protocol <br>
 
-Simple Java Multiple-Chat Application using Java and Socket
+Simple Java Multiple-Chat Application <br>
+
+Technology: Java, Socket
